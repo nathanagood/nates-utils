@@ -7,15 +7,18 @@ import sys
 import argparse
 import random
 import re
+import csv
 
 EMAIL_DOMAIN = "example.com"
 LAST_NAME_SEED_FILE = "lnames.txt"
 FIRST_NAME_SEED_FILE = "fnames.txt"
 
-EMAIL_RE = re.compile(r'')
+EMAIL_RE = re.compile(r'(?P<address>[-_a-z0-9\.]+@[^.]+\.[-_a-z0-9]+)', re.I)
 
 LAST_NAME_SEEDS = open(LAST_NAME_SEED_FILE).read().splitlines()
 FIRST_NAME_SEEDS = open(FIRST_NAME_SEED_FILE).read().splitlines()
+
+EMAIL_ADDY_MAP = {}
 
 def email_generator():
     """
@@ -41,6 +44,17 @@ def email_filter(in_str):
     Replaces email addresses with fake email addresses.
     """
     out_str = in_str
+    match = EMAIL_RE.search(out_str)
+    if not match:
+        return out_str
+
+    email = match.group('address')
+    if email in EMAIL_ADDY_MAP:
+        anon_email = EMAIL_ADDY_MAP[email]
+    else:
+        anon_email = email_generator()
+        EMAIL_ADDY_MAP[email] = anon_email
+    out_str = EMAIL_RE.sub(anon_email, out_str.lower(), 1)
     return out_str
 
 def apply_filters(in_str, filter_set):
@@ -85,9 +99,17 @@ def main():
             record = generate_all(generators)
             print(record)
     else:
-        for line in sys.stdin:
-            filtered = apply_filters(line, filters)
-            print(filtered, end='')
+        # for line in sys.stdin:
+        #     filtered = apply_filters(line, filters)
+        #     print(filtered, end='')
+        record_reader = csv.reader(sys.stdin)
+        for row in record_reader:
+            filtered_row = []
+            for field in row:
+                field = apply_filters(field, filters)
+                filtered_row.append(field)
+            print(','.join(filtered_row))
+
 
     print("Done.", file=sys.stderr)
 
