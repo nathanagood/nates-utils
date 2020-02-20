@@ -49,6 +49,8 @@ def email_generator():
 
 def generate_all(generators):
     """
+    Runs through all of the generators and calls them for the given
+    line, transforming it along the way.
     """
     out_str = ""
     for gen in generators:
@@ -114,7 +116,9 @@ def main():
                         action="store_true")
     parser.add_argument("-c", "--count", help="if generating, generates this number of items")
     parser.add_argument("-f", "--field", help="operates only on the given field")
-    parser.add_argument("-n", "--number", help="randomizes numbers and uses the given number format")
+    parser.add_argument("-n",
+                        "--number",
+                        help="randomizes numbers and uses the given number format")
     parser.add_argument("-a", "--start-with", help="uses the provided value as the start")
     parser.add_argument("-z", "--end-with", help="uses the provide value as the end")
 
@@ -129,15 +133,21 @@ def main():
 
     if args.number:
         print("Anonymizing numbers...", file=sys.stderr)
-        nf = functools.partial(number_filter, args.number, int(args.start_with), int(args.end_with))
-        filters.append(nf)
-        ng = functools.partial(number_generator, args.number, int(args.start_with), int(args.end_with))
-        generators.append(ng)
+        nbr_filter_func = functools.partial(number_filter,
+                                            args.number,
+                                            int(args.start_with),
+                                            int(args.end_with))
+        filters.append(nbr_filter_func)
+        nbr_gen_func = functools.partial(number_generator,
+                                         args.number,
+                                         int(args.start_with),
+                                         int(args.end_with))
+        generators.append(nbr_gen_func)
 
     print("Starting...", file=sys.stderr)
 
     if args.generate:
-        for i in range(int(args.count)):
+        for _ in range(int(args.count)):
             record = generate_all(generators)
             print(record)
     else:
